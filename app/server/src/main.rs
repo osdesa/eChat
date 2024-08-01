@@ -1,4 +1,3 @@
 fn main() {
-    println!("Server running...");
-    // Client-specific code
+    println!("Port: {}", shared::PORT);
 }
