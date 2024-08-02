@@ -11,27 +11,25 @@ pub fn new_connection(mut stream : TcpStream){
 }
 
 fn manage_connection(mut stream : TcpStream){
-    let mut buffer: [u8; 512] = [0; 512];
+    let mut request = String::new();
 
     loop {
-        match stream.read(&mut buffer) {
+        match stream.read_to_string(&mut request) {
             Ok(0) => {
                 println!("[INFO] client has ungracefully closed the connection {}", 
                     stream.peer_addr().unwrap());
                 return;
             }
-            Ok(bytes_read) => {
-                let message = String::from_utf8_lossy(&buffer[..bytes_read]);
+            Ok(_bytes_read) => {
                 // disconnect message
                 // client sending message
                 // request messages
 
-                println!("[INFO] received message from user: {}\n test", message);
+                println!("[INFO] received message from user: {}", request);
             }
             Err(e) => {
                 eprintln!("[WARN] Error reading message client: {}", e);
             }
         }
-        println!("NEW LOOP");
     }
 }
