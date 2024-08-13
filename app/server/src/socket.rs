@@ -1,5 +1,5 @@
 use std::net::TcpListener;
-use std::io;
+use std::{io, thread};
 
 use crate::handlers;
 
@@ -18,7 +18,9 @@ pub fn listen(listener : TcpListener) -> io::Result<()> {
     for stream in listener.incoming(){
         match stream {
             Ok(stream) => {
-                handlers::new_connection(stream);
+                thread::spawn(move || {
+                    handlers::new_connection(stream);
+                });
             }
             Err(e) => {eprintln!("Failed to accept connection: {}", e)}
         }

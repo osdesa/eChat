@@ -1,16 +1,14 @@
 use std::{io::{Read, Write}, net::TcpStream};
 
 pub fn new_connection(mut stream : TcpStream){
-    println!("Handling connection: {}", stream.peer_addr().unwrap());
-
+    println!("Handling request: {}", stream.peer_addr().unwrap());
     if let Err(e) = stream.write_all(b"OK\r\n") {
         eprintln!("Failed to write to stream: {}", e);
     }
-
-    manage_connection(stream);
+    manage_request(stream);
 }
 
-fn manage_connection(mut stream : TcpStream){
+fn manage_request(mut stream : TcpStream){
     let mut request = String::new();
 
     loop {
@@ -24,7 +22,6 @@ fn manage_connection(mut stream : TcpStream){
                 // disconnect message
                 // client sending message
                 // request messages
-
                 println!("[INFO] received message from user: {}", request);
             }
             Err(e) => {
