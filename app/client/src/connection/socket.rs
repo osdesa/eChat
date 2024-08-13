@@ -1,6 +1,6 @@
 use std::net::TcpStream;
 
-struct NetConnection {
+pub struct NetConnection {
     stream : TcpStream,
     port : u32,
     ip_addr : String,

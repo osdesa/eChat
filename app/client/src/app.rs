@@ -2,6 +2,7 @@
 use crate::state::app_state::AppState;
 use crate::ui::components;
 use crate::ui::login_screen::LoginScreen;
+use crate::connection::socket::{self, NetConnection};
 
 use fltk::app::{self, App, Receiver, Sender};
 use fltk::prelude::*;
@@ -10,6 +11,7 @@ pub struct EChat{
     state : AppState,
     win : DoubleWindow,
     app : App,
+    net_connection : NetConnection,
     sender : Sender<u64>,
     receiver : Receiver<u64>,
 }
@@ -21,6 +23,7 @@ impl EChat{
             state : AppState::new(),
             win: components::create_window(),
             app: components::create_app(),
+            net_connection : NetConnection::default("127.0.0.1".to_owned(), shared::PORT),
             sender : s,
             receiver : r,
         }
@@ -30,6 +33,7 @@ impl EChat{
         println!("[INFO] App is running");
 
         self.init_screen();
+        self.connect_to_server();
         self.update();
     }
 
