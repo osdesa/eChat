@@ -1,4 +1,4 @@
-use fltk::{app, prelude::WidgetExt, window::Window};
+use fltk::{app, prelude::{GroupExt, WidgetExt}, window::Window};
 
 
 pub fn create_app() -> app::App {
@@ -7,7 +7,8 @@ pub fn create_app() -> app::App {
 }
 
 pub fn create_window() -> fltk::window::DoubleWindow {
-    let wind = Window::default().with_label("EChat");
+    let mut wind = Window::default().with_label("EChat").with_size(500, 300);;
+    wind.make_resizable(true);
 
     wind
 }

@@ -32,7 +32,7 @@ impl EChat{
     }
 
     fn init_screen(&mut self){
-        let current_screen = LoginScreen::new();
+        let current_screen = LoginScreen::default();
 
         self.win.end();
         self.win.show();

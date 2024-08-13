@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 shared = { path = "../shared" }
-fltk = "^1.4.33"
+fltk = "1.4.33"
+fltk-grid = "0.4"
