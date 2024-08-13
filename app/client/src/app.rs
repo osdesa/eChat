@@ -1,4 +1,5 @@
 
+use crate::connection::handlers;
 use crate::state::app_state::AppState;
 use crate::ui::components;
 use crate::ui::login_screen::LoginScreen;
@@ -41,8 +42,10 @@ impl EChat{
         println!("{}", self.state);
     }
 
-    fn connect_to_server(&self){
-        println!("[INFO] Connecting to server");
+    fn connect_to_server(&mut self){
+        self.net_connection.check_connection();
+
+        handlers::send_message(&mut self.net_connection, "TEST".to_owned());
     }
 
     fn update(&mut self){
@@ -50,7 +53,6 @@ impl EChat{
         self.win.show();
 
         while self.app.wait() {
-            println!("TEST");
 
             // Handle sent messages
             if let Some(msg) = self.receiver.recv(){
