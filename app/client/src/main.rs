@@ -1,6 +1,8 @@
 mod app;
 mod state;
 mod ui;
+mod login;
+mod connection;
 
 use crate::app::EChat;
 

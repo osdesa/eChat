@@ -7,3 +7,6 @@ edition = "2021"
 shared = { path = "../shared" }
 fltk = "1.4.33"
 fltk-grid = "0.4"
+argon2 = "0.5.3"
+rand = "0.8.5"
+
