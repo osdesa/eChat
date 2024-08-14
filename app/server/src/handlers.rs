@@ -1,18 +1,17 @@
-use std::{io::{Read, Write}, net::TcpStream};
+use std::{net::TcpStream, str::FromStr};
 
-use shared::MsgInfo;
+use shared::{Events, MsgInfo};
+
 
 pub fn new_connection(mut stream : TcpStream){
     println!("Handling request: {}", stream.peer_addr().unwrap());
-    if let Err(e) = stream.write_all(b"OK\r\n") {
-        eprintln!("Failed to write to stream: {}", e);
-    }
+
+    shared::write_data(&mut stream, "OK".to_owned());
+
     manage_request(stream);
 }
 
 fn manage_request(mut stream : TcpStream){
-    let mut buf: [u8; 128] = [0; 128];
-
     loop {
         let msg : MsgInfo = shared::read_data(&mut stream);
         match msg.length {
@@ -21,12 +20,15 @@ fn manage_request(mut stream : TcpStream){
                     stream.peer_addr().unwrap());
                 return;
             }
-            _bytes_read => {
-                // disconnect message
-                // client sending message
-                // request messages
-                println!("[INFO] received message from user: {}", msg.msg);
-            }
+            _bytes_read => {valid_request(msg.msg);}
         }
+    }
+}
+
+fn valid_request(msg : String) {
+    match Events::from_str(&msg).unwrap() {
+        Events::OK => todo!(),
+        Events::GetPubKey => todo!(),
+        Events::PostPubKey => todo!(),
     }
 }

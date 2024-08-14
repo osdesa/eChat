@@ -82,6 +82,7 @@ dependencies = [
  "fltk",
  "fltk-grid",
  "rand",
+ "rsa",
  "shared",
 ]
 

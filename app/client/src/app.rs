@@ -22,11 +22,12 @@ pub struct EChat{
 impl EChat{
     pub fn new() -> Self{
         let (s, r) = app::channel();
+        let keys = shared::get_keys();
         EChat{
             state : AppState::new(),
             win: components::create_window(),
             app: components::create_app(),
-            net_connection : NetConnection::default("127.0.0.1".to_owned(), shared::PORT),
+            net_connection : NetConnection::default("127.0.0.1".to_owned(), shared::PORT, keys),
             sender : s,
             receiver : r,
         }
@@ -36,7 +37,7 @@ impl EChat{
         println!("[INFO] App is running");
 
         self.init_screen();
-        self.connect_to_server();
+        self.key_exchange();
         self.update();
     }
 
@@ -44,17 +45,18 @@ impl EChat{
         println!("{}", self.state);
     }
 
-    fn connect_to_server(&mut self){
-        self.net_connection.check_connection();
-
-        handlers::send_message(&mut self.net_connection, "TEST".to_owned());
+    fn key_exchange(&mut self){
+        handlers::send_message_unencrypted(&mut self.net_connection.stream, "GETPubKey".to_owned());
+        handlers::handle_message(&mut self.net_connection);
     }
 
     fn update(&mut self){
         self.win.end();
         self.win.show();
 
+        
         while self.app.wait() {
+            handlers::handle_message(&mut self.net_connection);
             // Handle sent messages
             if let Some(msg) = self.receiver.recv(){
                 match msg {

@@ -1,4 +1,4 @@
-use std::{fs, io::{Read, Write}, net::TcpStream, os::unix::{fs::PermissionsExt, process}, path::Path};
+use std::{fs, io::{Read, Write}, net::TcpStream, os::unix::{fs::PermissionsExt, process}, path::Path, str::FromStr};
 use rsa::{traits::PublicKeyParts, RsaPrivateKey, RsaPublicKey};
 use pem;
 
@@ -17,14 +17,38 @@ pub struct Keys {
     pub public : RsaPublicKey,
 }
 
+pub enum Events {
+    OK,
+    GetPubKey,
+    PostPubKey,
+}
+
+impl FromStr for Events {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<Events, Self::Err> {
+        let split : Vec<String> = input.split(" ")
+            .map(|x| x.to_string())
+            .collect();
+        
+        match split[0].as_str() {
+            "OK"                => Ok(Events::OK),
+            "GETPubKey"         => Ok(Events::GetPubKey),
+            "POSTPubKey"        => Ok(Events::PostPubKey),
+            _                   => Err(()),
+        }
+    }
+}
+
 // FUNCTIONS
 
 pub fn write_data(stream : &mut TcpStream, msg : String) {
     // Calculate the size of the message
-    let size: [u8; 4] = (msg.len() as u32).to_be_bytes();
+    let data = format!("{msg}");
+    let size: [u8; 4] = (data.len() as u32).to_be_bytes();
 
     stream.write_all(&size);
-    stream.write_all(msg.as_bytes());
+    stream.write_all(data.as_bytes());
 }
 
 pub fn read_data(stream : &mut TcpStream) -> MsgInfo {
@@ -34,7 +58,7 @@ pub fn read_data(stream : &mut TcpStream) -> MsgInfo {
         println!("Client disconnected.");
     }
     let length = u32::from_be_bytes(length_bytes) as usize;
-
+    println!("SIZE: {}", length);
     let mut buffer = vec![0u8; length];
     stream.read_exact(&mut buffer);
 
@@ -52,11 +76,18 @@ pub fn get_keys() -> Keys{
     read_keys()
 }
 
+pub fn encode_pub_key(key : RsaPublicKey) -> String {
+    pkcs1::EncodeRsaPublicKey::to_pkcs1_pem(&key, pkcs1::LineEnding::CRLF).unwrap()
+}
+
+pub fn decode_pub_key(key : String) -> RsaPublicKey {
+    pkcs1::DecodeRsaPublicKey::from_pkcs1_pem(&key).unwrap()
+}
+
 fn read_keys() -> Keys {
     let key_directory = Path::new("secure_keys");
     let private_key_path = key_directory.join("private_key.pem");
     let public_key_path = key_directory.join("public_key.pem");
-
 
     let private: Result<RsaPrivateKey, pkcs1::Error> = pkcs1::DecodeRsaPrivateKey::read_pkcs1_pem_file(&private_key_path);
     let public: Result<RsaPublicKey, pkcs1::Error> = pkcs1::DecodeRsaPublicKey::read_pkcs1_pem_file(&public_key_path);
