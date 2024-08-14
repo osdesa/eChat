@@ -1,4 +1,6 @@
 
+use std::fmt::format;
+
 use crate::connection::handlers;
 use crate::state::app_state::AppState;
 use crate::ui::components;
@@ -53,7 +55,6 @@ impl EChat{
         self.win.show();
 
         while self.app.wait() {
-
             // Handle sent messages
             if let Some(msg) = self.receiver.recv(){
                 match msg {

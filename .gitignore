@@ -1,1 +1,3 @@
 app/target/*
+app/secure_keys/private_key.pem
+app/secure_keys/public_key.pem

@@ -1,5 +1,7 @@
 use std::{io::{Read, Write}, net::TcpStream};
 
+use shared::MsgInfo;
+
 pub fn new_connection(mut stream : TcpStream){
     println!("Handling request: {}", stream.peer_addr().unwrap());
     if let Err(e) = stream.write_all(b"OK\r\n") {
@@ -9,23 +11,21 @@ pub fn new_connection(mut stream : TcpStream){
 }
 
 fn manage_request(mut stream : TcpStream){
-    let mut request = String::new();
+    let mut buf: [u8; 128] = [0; 128];
 
     loop {
-        match stream.read_to_string(&mut request) {
-            Ok(0) => {
+        let msg : MsgInfo = shared::read_data(&mut stream);
+        match msg.length {
+            0 => {
                 println!("[INFO] client has ungracefully closed the connection {}", 
                     stream.peer_addr().unwrap());
                 return;
             }
-            Ok(_bytes_read) => {
+            _bytes_read => {
                 // disconnect message
                 // client sending message
                 // request messages
-                println!("[INFO] received message from user: {}", request);
-            }
-            Err(e) => {
-                eprintln!("[WARN] Error reading message client: {}", e);
+                println!("[INFO] received message from user: {}", msg.msg);
             }
         }
     }
