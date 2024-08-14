@@ -7,7 +7,7 @@ mod connection;
 use crate::app::EChat;
 
 fn main() {
-    shared::key_generation();
+    let keys = shared::get_keys();
 
     let mut app = EChat::new();
     app.run();

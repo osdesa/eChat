@@ -1,5 +1,5 @@
-use std::{fs, io::{Read, Write}, net::TcpStream, os::unix::fs::PermissionsExt, path::Path};
-use rsa::{RsaPublicKey, RsaPrivateKey};
+use std::{fs, io::{Read, Write}, net::TcpStream, os::unix::{fs::PermissionsExt, process}, path::Path};
+use rsa::{traits::PublicKeyParts, RsaPrivateKey, RsaPublicKey};
 use pem;
 
 // CONSTANTS
@@ -41,8 +41,27 @@ pub fn read_data(stream : &mut TcpStream) -> MsgInfo {
     MsgInfo {msg : String::from_utf8_lossy(&buffer).to_string(), length : length}
 }
 
-pub fn get_keys() {
+pub fn get_keys() -> Keys{   
+    println!("[INFO] Checking if user has keys"); 
+    if !Path::new("secure_keys").exists(){
+        println!("[INFO] Generating keys");
+        key_generation();
+    }
 
+    println!("[INFO] Retrieving keys");
+    read_keys()
+}
+
+fn read_keys() -> Keys {
+    let key_directory = Path::new("secure_keys");
+    let private_key_path = key_directory.join("private_key.pem");
+    let public_key_path = key_directory.join("public_key.pem");
+
+
+    let private: Result<RsaPrivateKey, pkcs1::Error> = pkcs1::DecodeRsaPrivateKey::read_pkcs1_pem_file(&private_key_path);
+    let public: Result<RsaPublicKey, pkcs1::Error> = pkcs1::DecodeRsaPublicKey::read_pkcs1_pem_file(&public_key_path);
+
+    Keys {private : private.unwrap(), public : public.unwrap()}
 }
 
 pub fn key_generation() {
@@ -58,8 +77,7 @@ pub fn key_generation() {
 fn store_keys(private : RsaPrivateKey, public : RsaPublicKey) {
     let key_directory = Path::new("secure_keys");
 
-    let r = fs::create_dir_all(&key_directory).is_err();
-    println!("{}", r);
+    fs::create_dir_all(&key_directory).is_err();
 
     fs::set_permissions(&key_directory, fs::Permissions::from_mode(0o700));
 
@@ -67,8 +85,6 @@ fn store_keys(private : RsaPrivateKey, public : RsaPublicKey) {
     let public_key_path = key_directory.join("public_key.pem");
 
 
-    let p = pkcs1::EncodeRsaPrivateKey::write_pkcs1_pem_file(&private, private_key_path, pkcs1::LineEnding::CRLF).is_err();
-    let pu = pkcs1::EncodeRsaPublicKey::write_pkcs1_pem_file(&public, public_key_path, pkcs1::LineEnding::CRLF).is_err();
-
-    println!("{} {}", p, pu);
+    pkcs1::EncodeRsaPrivateKey::write_pkcs1_pem_file(&private, private_key_path, pkcs1::LineEnding::CRLF).is_err();
+    pkcs1::EncodeRsaPublicKey::write_pkcs1_pem_file(&public, public_key_path, pkcs1::LineEnding::CRLF).is_err();
 }
