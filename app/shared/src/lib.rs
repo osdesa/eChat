@@ -29,7 +29,7 @@ impl FromStr for Events {
         let split : Vec<String> = input.split(" ")
             .map(|x| x.to_string())
             .collect();
-        
+
         match split[0].as_str() {
             "OK"                => Ok(Events::OK),
             "GETPubKey"         => Ok(Events::GetPubKey),

@@ -7,13 +7,14 @@ use crate::connection::socket::NetConnection;
 use fltk::app::{self, App, Receiver, Sender};
 use fltk::prelude::*;
 use fltk::window::DoubleWindow;
+
 pub struct EChat{
     state : AppState,
     win : DoubleWindow,
     app : App,
     net_connection : NetConnection,
-    sender : Sender<u64>,
-    receiver : Receiver<u64>,
+    ui_sender : Sender<u64>,
+    ui_receiver : Receiver<u64>,
 }
 
 impl EChat{
@@ -25,8 +26,8 @@ impl EChat{
             win: components::create_window(),
             app: components::create_app(),
             net_connection : NetConnection::default("127.0.0.1".to_owned(), shared::PORT, keys),
-            sender : s,
-            receiver : r,
+            ui_sender : s,
+            ui_receiver : r,
         }
     }
 
@@ -50,14 +51,12 @@ impl EChat{
     fn update(&mut self){
         self.win.end();
         self.win.show();
-
         
         while self.app.wait() {
-            handlers::handle_message(&mut self.net_connection);
-            // Handle sent messages
-            if let Some(msg) = self.receiver.recv(){
+            if let Some(msg) = self.ui_receiver.recv(){
                 match msg {
                     0 => {println!("CLOSE PROGRAM")},
+                    1 => {println!("LOGIN")},
                     _ => ()
                 }
             }
@@ -65,7 +64,7 @@ impl EChat{
     }
 
     fn init_screen(&mut self){
-        let mut current_screen = LoginScreen::default(self.sender);
+        let mut current_screen = LoginScreen::default(self.ui_sender);
         current_screen.register_default_callback();
     }
 }

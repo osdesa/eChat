@@ -1,17 +1,19 @@
-use std::{net::TcpStream, str::FromStr};
-
+use std::{net::TcpStream, str::FromStr, sync::{Arc, Mutex}};
 use shared::{Events, MsgInfo};
 
 
-pub fn new_connection(mut stream : TcpStream){
+use crate::{requests, state::server_state::ServerState};
+
+
+pub fn new_connection(mut stream : TcpStream, state : Arc<Mutex<ServerState>>){
     println!("Handling request: {}", stream.peer_addr().unwrap());
 
     shared::write_data(&mut stream, "OK".to_owned());
 
-    manage_request(stream);
+    manage_request(stream, state);
 }
 
-fn manage_request(mut stream : TcpStream){
+fn manage_request(mut stream : TcpStream, state : Arc<Mutex<ServerState>>){
     loop {
         let msg : MsgInfo = shared::read_data(&mut stream);
         match msg.length {
@@ -20,15 +22,17 @@ fn manage_request(mut stream : TcpStream){
                     stream.peer_addr().unwrap());
                 return;
             }
-            _bytes_read => {valid_request(msg.msg);}
+            _bytes_read => {valid_request(msg.msg, state.clone(), &mut stream);}
         }
     }
 }
 
-fn valid_request(msg : String) {
+fn valid_request(msg : String, state : Arc<Mutex<ServerState>>, stream : &mut TcpStream) {
+    let server_info = state.lock().unwrap();
+
     match Events::from_str(&msg).unwrap() {
-        Events::OK => todo!(),
-        Events::GetPubKey => todo!(),
-        Events::PostPubKey => todo!(),
+        Events::OK => requests::ok(),
+        Events::GetPubKey => requests::get_pub_key(stream, server_info.public_key.clone()),
+        Events::PostPubKey => requests::post_pub_key(),
     }
 }

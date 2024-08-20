@@ -10,13 +10,13 @@ pub struct LoginScreen{
     username_input : input::Input,
     password_input : input::Input,
     submit : Button, 
+    sender : Sender<u64>,
 }
 
 impl LoginScreen {
     pub fn default(sender : Sender<u64>) -> Self {
         let mut grid = Grid::default_fill();
         grid.set_layout(20, 5);
-        println!("test");
 
         let username_input = input::Input::default();
         let password_input = input::Input::default();
@@ -27,6 +27,7 @@ impl LoginScreen {
             username_input,
             password_input,
             submit,
+            sender
         };
         g.fill(sender);
         g
@@ -50,12 +51,13 @@ impl LoginScreen {
     }
 
     pub fn register_default_callback(&mut self) {
+        self.submit.emit(self.sender, 1);
         self.submit.set_callback({
             let username = self.username_input.clone();
             let password = self.password_input.clone();
 
             move |_| {
-                login::login(username.value(), password.value());
+              login::login(username.value(), password.value());
             }
         });
     }
