@@ -1,6 +1,5 @@
 use std::{fs, io::{Read, Write}, net::TcpStream, os::unix::{fs::PermissionsExt, process}, path::Path, str::FromStr};
-use rsa::{traits::PublicKeyParts, RsaPrivateKey, RsaPublicKey};
-use pem;
+use rsa::{RsaPrivateKey, RsaPublicKey};
 
 // CONSTANTS
 pub const PORT: u32 = 3214;
@@ -65,15 +64,17 @@ pub fn read_data(stream : &mut TcpStream) -> MsgInfo {
     MsgInfo {msg : String::from_utf8_lossy(&buffer).to_string(), length : length}
 }
 
-pub fn get_keys() -> Keys{   
+pub fn get_keys(path : String) -> Keys{   
     println!("[INFO] Checking if user has keys"); 
-    if !Path::new("secure_keys").exists(){
+    let loc = format!("secure_keys/{}", path);
+
+    if !Path::new(&loc).exists(){
         println!("[INFO] Generating keys");
-        key_generation();
+        key_generation(&loc);
     }
 
-    println!("[INFO] Retrieving keys");
-    read_keys()
+    println!("[INFO] Retrieving keys : {}", loc);
+    read_keys(&loc)
 }
 
 pub fn encode_pub_key(key : RsaPublicKey) -> String {
@@ -84,8 +85,8 @@ pub fn decode_pub_key(key : String) -> RsaPublicKey {
     pkcs1::DecodeRsaPublicKey::from_pkcs1_pem(&key).unwrap()
 }
 
-fn read_keys() -> Keys {
-    let key_directory = Path::new("secure_keys");
+fn read_keys(path : &String) -> Keys {
+    let key_directory = Path::new(path);
     let private_key_path = key_directory.join("private_key.pem");
     let public_key_path = key_directory.join("public_key.pem");
 
@@ -95,18 +96,18 @@ fn read_keys() -> Keys {
     Keys {private : private.unwrap(), public : public.unwrap()}
 }
 
-pub fn key_generation() {
+pub fn key_generation(path : &String) {
     let mut rng = rand::thread_rng();
     let bits = 2048;
 
     let priv_key: RsaPrivateKey = RsaPrivateKey::new(&mut rng, bits).expect("failed to generate a key");
     let pub_key: RsaPublicKey = RsaPublicKey::from(&priv_key);
 
-    store_keys(priv_key, pub_key);
+    store_keys(priv_key, pub_key, &path);
 }
 
-fn store_keys(private : RsaPrivateKey, public : RsaPublicKey) {
-    let key_directory = Path::new("secure_keys");
+fn store_keys(private : RsaPrivateKey, public : RsaPublicKey, path : &String) {
+    let key_directory = Path::new(path);
 
     fs::create_dir_all(&key_directory).is_err();
 
@@ -114,7 +115,6 @@ fn store_keys(private : RsaPrivateKey, public : RsaPublicKey) {
 
     let private_key_path = key_directory.join("private_key.pem");
     let public_key_path = key_directory.join("public_key.pem");
-
 
     pkcs1::EncodeRsaPrivateKey::write_pkcs1_pem_file(&private, private_key_path, pkcs1::LineEnding::CRLF).is_err();
     pkcs1::EncodeRsaPublicKey::write_pkcs1_pem_file(&public, public_key_path, pkcs1::LineEnding::CRLF).is_err();

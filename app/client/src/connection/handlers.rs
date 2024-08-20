@@ -1,4 +1,4 @@
-use std::{io::Write, net::TcpStream, str::FromStr};
+use std::{net::TcpStream, str::FromStr};
 use rsa::RsaPublicKey;
 
 use shared::Events;

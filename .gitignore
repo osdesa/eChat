@@ -1,3 +1,7 @@
 app/target/*
 app/secure_keys/private_key.pem
 app/secure_keys/public_key.pem
+app/secure_keys/client/private_key.pem
+app/secure_keys/client/public_key.pem
+app/secure_keys/server/private_key.pem
+app/secure_keys/server/public_key.pem

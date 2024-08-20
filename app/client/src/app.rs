@@ -1,11 +1,8 @@
-
-use std::fmt::format;
-
 use crate::connection::handlers;
 use crate::state::app_state::AppState;
 use crate::ui::components;
 use crate::ui::login_screen::LoginScreen;
-use crate::connection::socket::{self, NetConnection};
+use crate::connection::socket::NetConnection;
 
 use fltk::app::{self, App, Receiver, Sender};
 use fltk::prelude::*;
@@ -22,7 +19,7 @@ pub struct EChat{
 impl EChat{
     pub fn new() -> Self{
         let (s, r) = app::channel();
-        let keys = shared::get_keys();
+        let keys = shared::get_keys("client".to_owned());
         EChat{
             state : AppState::new(),
             win: components::create_window(),

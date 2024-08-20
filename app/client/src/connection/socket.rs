@@ -27,6 +27,9 @@ impl NetConnection {
     }
 
     fn connect_to_server(ip_addr : String, port : u32) -> TcpStream {
-        TcpStream::connect(format!("{}:{}", ip_addr, port)).unwrap()
-    }
+        TcpStream::connect(format!("{}:{}", ip_addr, port)).unwrap_or_else(|error| {
+            panic!("[FAIL] Failed to connect: to server[{}:{}] reason: {}", ip_addr, port, error.to_string());
+        })
+        
+    }    
 }
