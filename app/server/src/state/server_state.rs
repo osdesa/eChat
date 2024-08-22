@@ -1,3 +1,5 @@
+use std::collections::{hash_map, HashMap};
+
 use rsa::{RsaPrivateKey, RsaPublicKey};
 
 pub struct ServerState{
@@ -7,6 +9,7 @@ pub struct ServerState{
     pub public_key : RsaPublicKey,
     pub user_count : i64,
     pub running : bool,
+    pub user_keys : HashMap<String, RsaPublicKey>,
 }
 
 impl ServerState{
@@ -19,6 +22,7 @@ impl ServerState{
             public_key: keys.public,
             user_count : 0,
             running: false,
+            user_keys : HashMap::new(),
         }
     }
 }

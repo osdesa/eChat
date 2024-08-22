@@ -1,11 +1,10 @@
-use core::net;
-use std::{collections::HashMap, net::TcpStream, sync::{Arc, Mutex, MutexGuard}, thread};
+use std::{collections::HashMap, net::TcpStream, thread};
 
 use fltk::app::Receiver;
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use shared::Keys;
 
-use crate::connection::{self, handlers};
+use crate::connection::handlers;
 
 pub struct NetConnection {
     pub stream : TcpStream,
@@ -13,8 +12,8 @@ pub struct NetConnection {
     ip_addr : String,
     pub public : RsaPublicKey,
     pub private : RsaPrivateKey,
+    pub receiver : Receiver<String>,
     pub keys : HashMap<String, RsaPublicKey>,
-    pub receiver : Receiver<String>
 }
 
 impl NetConnection {
@@ -27,8 +26,8 @@ impl NetConnection {
             ip_addr : ip_addr,       
             public : keys.public,
             private : keys.private,
-            keys : HashMap::new(),
             receiver : recv,
+            keys : HashMap::new(),
         }
     }
 
@@ -49,8 +48,6 @@ pub fn net_connect(nr: &Receiver<String>) {
 
     // Spawn network thread
     thread::spawn(move || {
-        handlers::key_exchange(&mut network);
-
         loop {
             handlers::handle_net_message(&mut network);
         }

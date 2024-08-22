@@ -1,5 +1,5 @@
 use std::{fs, io::{Read, Write}, net::TcpStream, os::unix::{fs::PermissionsExt, process}, path::Path, str::FromStr};
-use rsa::{RsaPrivateKey, RsaPublicKey};
+use rsa::{Pkcs1v15Encrypt, RsaPrivateKey, RsaPublicKey};
 
 // CONSTANTS
 pub const PORT: u32 = 3214;
@@ -9,6 +9,7 @@ pub const DATA_CHUNK_SIZE: usize = 512;
 pub struct MsgInfo {
     pub msg : String,
     pub length : usize,
+    pub user : String
 }
 
 pub struct Keys {
@@ -32,9 +33,7 @@ impl FromStr for Events {
     type Err = ();
 
     fn from_str(input: &str) -> Result<Events, Self::Err> {
-        let split : Vec<String> = input.split(" ")
-            .map(|x| x.to_string())
-            .collect();
+        let split = split_string(input.to_string());
 
         match split[0].as_str() {
             "OK"                => Ok(Events::OK),
@@ -47,6 +46,10 @@ impl FromStr for Events {
 
 // FUNCTIONS
 
+pub fn split_string(s : String) -> Vec<String> {
+    s.split(" ").map(|x| x.to_string()).collect()
+}
+
 pub fn write_data(stream : &mut TcpStream, msg : String) {
     // Calculate the size of the message
     let data = format!("{msg}");
@@ -56,7 +59,7 @@ pub fn write_data(stream : &mut TcpStream, msg : String) {
     stream.write_all(data.as_bytes());
 }
 
-pub fn read_data(stream : &mut TcpStream) -> MsgInfo {
+pub fn read_data(stream : &mut TcpStream, priv_key : Option<RsaPrivateKey>) -> MsgInfo {
     let mut length_bytes = [0u8; 4];
 
     if let Err(_) = stream.read_exact(&mut length_bytes) {
@@ -66,8 +69,19 @@ pub fn read_data(stream : &mut TcpStream) -> MsgInfo {
 
     let mut buffer = vec![0u8; length];
     stream.read_exact(&mut buffer);
+    let msg = String::from_utf8_lossy(&buffer).to_string();
 
-    MsgInfo {msg : String::from_utf8_lossy(&buffer).to_string(), length : length}
+    if priv_key.is_some() {
+        // decrypt the message
+        decrypt_message(msg, priv_key.unwrap());
+    }
+
+    MsgInfo {msg : String::from_utf8_lossy(&buffer).to_string(), length : length, user : "".to_string()}
+}
+
+fn decrypt_message(msg: String, priv_key : RsaPrivateKey) -> String {
+    println!("MSG: {}", msg);
+    todo!()
 }
 
 pub fn get_keys(path : String) -> Keys{   
@@ -124,4 +138,13 @@ fn store_keys(private : RsaPrivateKey, public : RsaPublicKey, path : &String) {
 
     pkcs1::EncodeRsaPrivateKey::write_pkcs1_pem_file(&private, private_key_path, pkcs1::LineEnding::CRLF).is_err();
     pkcs1::EncodeRsaPublicKey::write_pkcs1_pem_file(&public, public_key_path, pkcs1::LineEnding::CRLF).is_err();
+}
+
+pub fn write_encrypted(data: String, stream : &mut TcpStream, pub_key : RsaPublicKey) {
+    let mut rng = rand::thread_rng();
+    let enc_data = pub_key.encrypt(&mut rng, Pkcs1v15Encrypt, data.as_bytes()).expect("failed to encrypt");
+
+    let encrpyted: String = String::from_utf8_lossy(&enc_data).to_string();
+    
+    write_data(stream, encrpyted);
 }

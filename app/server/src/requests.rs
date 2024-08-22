@@ -1,16 +1,24 @@
-use std::net::TcpStream;
+use std::{net::TcpStream, sync::{Arc, Mutex}};
 use rsa::RsaPublicKey;
+
+use crate::{handlers, state::server_state::ServerState};
 
 pub fn ok(){
     
 }
 
-pub fn get_pub_key(stream : &mut TcpStream, key : RsaPublicKey){
-    let msg = format!("GETPubKey {}", shared::encode_pub_key(key));
-    shared::write_data(stream, msg);
-    shared::write_data(stream, "POSTPubKey".to_string());
+pub fn get_pub_key(stream : &mut TcpStream, state : Arc<Mutex<ServerState>>){
+    let server_info = state.lock().unwrap();
+    let msg = format!("GETPubKey SERVER {}", shared::encode_pub_key(server_info.public_key.clone()));
+    
+    handlers::send_data(stream, &state, &"YOU".to_string(),msg);
+    handlers::send_data(stream, &state, &"YOU".to_string(),"POSTPubKey".to_string());
 }
 
-pub fn post_pub_key(){
-    println!("Receiving pub key");
+pub fn post_pub_key(state : Arc<Mutex<ServerState>>, msg : String){
+    let split = shared::split_string(msg);
+
+    let key: RsaPublicKey =  shared::decode_pub_key(split[1..].join(" "));    
+    
+
 }
