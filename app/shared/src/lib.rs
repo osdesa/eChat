@@ -22,6 +22,12 @@ pub enum Events {
     PostPubKey,
 }
 
+impl Default for Events {
+    fn default() -> Self {
+        Self::OK
+    }
+}
+
 impl FromStr for Events {
     type Err = ();
 
@@ -57,7 +63,7 @@ pub fn read_data(stream : &mut TcpStream) -> MsgInfo {
         println!("Client disconnected.");
     }
     let length = u32::from_be_bytes(length_bytes) as usize;
-    println!("SIZE: {}", length);
+
     let mut buffer = vec![0u8; length];
     stream.read_exact(&mut buffer);
 

@@ -10,11 +10,10 @@ pub struct LoginScreen{
     username_input : input::Input,
     password_input : input::Input,
     submit : Button, 
-    sender : Sender<u64>,
 }
 
 impl LoginScreen {
-    pub fn default(sender : Sender<u64>) -> Self {
+    pub fn default() -> Self {
         let mut grid = Grid::default_fill();
         grid.set_layout(20, 5);
 
@@ -27,13 +26,12 @@ impl LoginScreen {
             username_input,
             password_input,
             submit,
-            sender
         };
-        g.fill(sender);
+        g.fill();
         g
     }
     
-    fn fill(&mut self, _sender : Sender<u64>) {
+    fn fill(&mut self) {
         let grid = &mut self.grid;
         grid.show_grid(false); // set to true to see cell outlines
 
@@ -50,14 +48,14 @@ impl LoginScreen {
         components::create_button_grid(grid, &mut self.submit, 10, 2);
     }
 
-    pub fn register_default_callback(&mut self) {
-        self.submit.emit(self.sender, 1);
+    pub fn register_default_callback(&mut self, sender : Sender<String>) {
         self.submit.set_callback({
             let username = self.username_input.clone();
             let password = self.password_input.clone();
 
             move |_| {
-              login::login(username.value(), password.value());
+                println!("SENDING MESSAGE");
+                sender.send(format!("LOGIN {} {}", username.value(), password.value()));
             }
         });
     }

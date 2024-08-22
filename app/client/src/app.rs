@@ -1,4 +1,4 @@
-use crate::connection::handlers;
+use crate::connection::{handlers, socket};
 use crate::state::app_state::AppState;
 use crate::ui::components;
 use crate::ui::login_screen::LoginScreen;
@@ -12,22 +12,23 @@ pub struct EChat{
     state : AppState,
     win : DoubleWindow,
     app : App,
-    net_connection : NetConnection,
-    ui_sender : Sender<u64>,
-    ui_receiver : Receiver<u64>,
+    sender : Sender<String>,
+    receiver : Receiver<String>,
 }
 
 impl EChat{
     pub fn new() -> Self{
         let (s, r) = app::channel();
-        let keys = shared::get_keys("client".to_owned());
+
+        // Spawn network thread with receiver
+        socket::net_connect(&r);
+
         EChat{
             state : AppState::new(),
             win: components::create_window(),
             app: components::create_app(),
-            net_connection : NetConnection::default("127.0.0.1".to_owned(), shared::PORT, keys),
-            ui_sender : s,
-            ui_receiver : r,
+            sender : s,
+            receiver : r,
         }
     }
 
@@ -35,7 +36,6 @@ impl EChat{
         println!("[INFO] App is running");
 
         self.init_screen();
-        self.key_exchange();
         self.update();
     }
 
@@ -43,28 +43,16 @@ impl EChat{
         println!("{}", self.state);
     }
 
-    fn key_exchange(&mut self){
-        handlers::send_message_unencrypted(&mut self.net_connection.stream, "GETPubKey".to_owned());
-        handlers::handle_message(&mut self.net_connection);
-    }
-
     fn update(&mut self){
         self.win.end();
         self.win.show();
         
         while self.app.wait() {
-            if let Some(msg) = self.ui_receiver.recv(){
-                match msg {
-                    0 => {println!("CLOSE PROGRAM")},
-                    1 => {println!("LOGIN")},
-                    _ => ()
-                }
-            }
         }
     }
 
     fn init_screen(&mut self){
-        let mut current_screen = LoginScreen::default(self.ui_sender);
-        current_screen.register_default_callback();
+        let mut current_screen = LoginScreen::default();
+        current_screen.register_default_callback(self.sender.clone());
     }
 }

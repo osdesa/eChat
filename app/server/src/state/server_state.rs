@@ -5,6 +5,7 @@ pub struct ServerState{
     pub port : u32,
     pub private_key : RsaPrivateKey,
     pub public_key : RsaPublicKey,
+    pub user_count : i64,
     pub running : bool,
 }
 
@@ -16,6 +17,7 @@ impl ServerState{
             port: shared::PORT,
             private_key: keys.private,
             public_key: keys.public,
+            user_count : 0,
             running: false,
         }
     }
