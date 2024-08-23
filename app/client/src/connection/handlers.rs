@@ -4,7 +4,6 @@ use shared::{Events, MsgInfo};
 use super::socket::NetConnection;
 
 fn send_data(network : &mut NetConnection, msg : String, user : String){
-    println!("[INFO] sending: {}", msg);
     // check if the user has the key, and request if not
     let pub_key: RsaPublicKey = match network.keys.get(&user) {
         Some(key) => key.clone(),
@@ -12,6 +11,7 @@ fn send_data(network : &mut NetConnection, msg : String, user : String){
     };
     // encrypt message
     let mut rng = rand::thread_rng();
+
     let enc_data: Vec<u8> = pub_key.encrypt(&mut rng, Pkcs1v15Encrypt, msg.as_bytes())
         .expect("failed to encrypt");
 
@@ -34,9 +34,9 @@ fn get_key(network: &mut NetConnection, user: &String) -> RsaPublicKey{
     // Send request for the users key to server
     let msg = format!("GETKEY");
     send_data(network, msg, "SERVER".to_string());
-
+    
     thread::sleep(Duration::from_millis(10));
-
+    
     handle_net_message(network);
 
     // recusive call to get the key
@@ -51,15 +51,15 @@ fn get_key(network: &mut NetConnection, user: &String) -> RsaPublicKey{
 }
 
 pub fn handle_net_message(network : &mut NetConnection){
-    println!("LOOP");
     let msg = listen(network);
+
     match Events::from_str(&msg).unwrap() {
         Events::OK => {},
         Events::PostPubKey => send_public_key(network),
         Events::GetPubKey => received_public_key(network, msg),
     }
-    send_data(network, "OK".to_string(), "SERVER".to_owned());
 
+    send_data(network, "OK".to_string(), "SERVER".to_owned());
     handle_app_message(network);
 }
 
@@ -67,9 +67,18 @@ fn send_public_key(network : &mut NetConnection){
     println!("[INFO] Sending public key");
 
     let key : String = shared::encode_pub_key(network.public.clone());    
-    let msg = format!("POSTPubKey {}", key);
+    let msg = format!("PPK USER {}", key);
 
-    send_data(network, msg, "SEVER".to_string());
+    // send the intended user name | Should be proper name |
+    let user_msg: String = format!("{:<32}", "USER_KEY");
+    network.stream.write(user_msg.as_bytes());
+    
+    // send the size of the message
+    let size: [u8; 4] = (msg.len() as u32).to_be_bytes();
+    network.stream.write(&size);
+
+    // send the encrypted message
+    network.stream.write(msg.as_bytes());
 }
 
 fn received_public_key(mut network : &mut NetConnection, msg : String){
@@ -82,8 +91,8 @@ fn received_public_key(mut network : &mut NetConnection, msg : String){
     let user = split[1].clone();
     let key: RsaPublicKey =  shared::decode_pub_key(split[2..].join(" "));
 
-    println!("USER {}, sent key {}", user, split[2..].join(" "));
     network.keys.insert(user, key);
+    send_public_key(network);
 }
 
 fn listen(connection: &mut NetConnection) -> String {
@@ -93,7 +102,7 @@ fn listen(connection: &mut NetConnection) -> String {
 fn read_data(connection: &mut NetConnection) -> MsgInfo {
     let mut user_bytes : [u8; 32] = [0u8; 32];
     let mut length_bytes: [u8; 4] = [0u8; 4];
-
+    
     if let Err(_) = connection.stream.read_exact(&mut user_bytes) {
         println!("Client disconnected.");
     }
@@ -109,17 +118,16 @@ fn read_data(connection: &mut NetConnection) -> MsgInfo {
     let msg = String::from_utf8_lossy(&buffer).to_string();
 
 
-    if user.contains(char::is_whitespace) {
+    if user.contains("KEY") {
         // welcome, from server no encryption
         println!("[INFO] Server sent welcome");
         return MsgInfo { msg: msg, length: length, user: user }
     }else{
         // decrypt the message
         let decrypt_key = connection.private.clone();
-        let dec_data = decrypt_key.decrypt(Pkcs1v15Encrypt, msg.as_bytes())
-            .expect("failed to decrypt test");
 
-        println!("test data {:?}", dec_data);
+        let dec_data = decrypt_key.decrypt(Pkcs1v15Encrypt, &buffer)
+            .expect("failed to decrypt test");
    
         MsgInfo { msg: String::from_utf8_lossy(&dec_data).to_string(), length: length, user: user }
     }

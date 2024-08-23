@@ -1,5 +1,6 @@
-use std::{fmt::format, io::{Read, Write}, net::TcpStream, str::FromStr, sync::{Arc, Mutex}, thread, time::Duration};
-use rsa::{signature::digest::crypto_common::KeyIvInit, Pkcs1v15Encrypt, RsaPublicKey};
+use core::time;
+use std::{fmt::format, io::{Read, Write}, net::TcpStream, os::linux::raw::stat, str::FromStr, sync::{Arc, Mutex}, thread, time::Duration};
+use rsa::{Pkcs1v15Encrypt, RsaPublicKey};
 use shared::{Events, MsgInfo};
 
 use crate::{requests, state::server_state::ServerState};
@@ -28,7 +29,7 @@ fn manage_request(stream : &mut TcpStream, state : Arc<Mutex<ServerState>>){
             _bytes_read => {valid_request(msg.msg, state.clone(), stream);}
         }
 
-        shared::write_data(stream, "OK".to_string());
+        send_data(stream, &state, &"USER".to_string(), "OK".to_string());
     }
 }
 
@@ -40,7 +41,7 @@ fn send_welcome(stream : &mut TcpStream, state : &Arc<Mutex<ServerState>>){
 
     let msg = format!("GETPubKey SERVER {}", key);
     // send the intended user name
-    let user_msg: String = format!("{:<32}", "YOU");
+    let user_msg: String = format!("{:<32}", "YOU_KEY");
     stream.write(user_msg.as_bytes());
     
     // send the size of the message
@@ -52,14 +53,13 @@ fn send_welcome(stream : &mut TcpStream, state : &Arc<Mutex<ServerState>>){
 }
 
 pub fn send_data(stream : &mut TcpStream, state : &Arc<Mutex<ServerState>>, user : &String, data : String){
+    // get the public key of the user
     let network = state.lock().unwrap();
-    let keys = network.user_keys.clone();
-    drop(network);
-    // check if the user has the key, and request if not
-    let pub_key: RsaPublicKey = match keys.get(user) {
+    let pub_key: RsaPublicKey = match network.user_keys.get(user) {
         Some(key) => key.clone(),
         None => get_key(stream, &state, user),
     };
+    drop(network);
 
     // encrypt message
     let mut rng = rand::thread_rng();
@@ -67,7 +67,7 @@ pub fn send_data(stream : &mut TcpStream, state : &Arc<Mutex<ServerState>>, user
         .expect("failed to encrypt");
 
     // send the intended user name
-    let user_msg = format!("{}{:<32}", user, " ");
+    let user_msg = format!("{:<32}", user);
     stream.write(user_msg.as_bytes());
     
     // send the size of the message
@@ -82,12 +82,14 @@ pub fn send_data(stream : &mut TcpStream, state : &Arc<Mutex<ServerState>>, user
 // Add checks to prevent infinite recursion
 fn get_key(stream : &mut TcpStream, state : &Arc<Mutex<ServerState>>, user : &String) -> RsaPublicKey{
     // Send request for the users key to server
+    println!("[WARN] recursive loop for getkey");
     let msg = format!("GETKEY");
-    send_data(stream, &state, &"YOU".to_string(), msg);
-
-    thread::sleep(Duration::from_millis(10));
 
     manage_request(stream, state.clone());
+    
+    send_data(stream, &state, &"USER".to_string(), msg);
+
+    //thread::sleep(Duration::from_millis(4000));
 
     // recusive call to get the key
     let network = state.lock().unwrap();
@@ -101,6 +103,7 @@ fn get_key(stream : &mut TcpStream, state : &Arc<Mutex<ServerState>>, user : &St
 
     // Store the key and return out
     let mut network = state.lock().unwrap();
+    println!("INSERT key: {}", user);
     network.user_keys.insert(user.clone(), pub_key.clone());
     pub_key
 }
@@ -125,7 +128,7 @@ fn read_data(stream : &mut TcpStream, state : &Arc<Mutex<ServerState>>) -> MsgIn
     stream.read_exact(&mut buffer);
     let msg = String::from_utf8_lossy(&buffer).to_string();
 
-    if !user.contains("SERVER") {
+    if !user.contains("SERVER") || user.contains("KEY") {
         MsgInfo { msg: msg, length: length, user: user }
     }else{
         // decrypt the message
@@ -133,7 +136,6 @@ fn read_data(stream : &mut TcpStream, state : &Arc<Mutex<ServerState>>) -> MsgIn
         let key = network.private_key.clone();
 
         let data = String::from_utf8_lossy(&key.decrypt(Pkcs1v15Encrypt, &buffer).unwrap()).to_string();
-        println!("DA: {}", data);
         
         MsgInfo { msg: data, length: length, user: user }
     }

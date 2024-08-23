@@ -38,7 +38,7 @@ impl FromStr for Events {
         match split[0].as_str() {
             "OK"                => Ok(Events::OK),
             "GETPubKey"         => Ok(Events::GetPubKey),
-            "POSTPubKey"        => Ok(Events::PostPubKey),
+            "PPK"               => Ok(Events::PostPubKey),
             _                   => Err(()),
         }
     }
