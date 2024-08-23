@@ -2,6 +2,7 @@ mod socket;
 mod handlers;
 mod state;
 mod requests;
+mod database;
 
 use std::sync::{Arc, Mutex};
 

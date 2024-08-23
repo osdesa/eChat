@@ -1,7 +1,9 @@
 use std::{net::TcpStream, sync::{Arc, Mutex}};
-use rsa::{signature::digest::crypto_common::InnerUser, RsaPublicKey};
+use argon2::{password_hash::{Salt, SaltString}, Argon2, PasswordHasher, PasswordVerifier};
+use rand::rngs::OsRng;
+use rsa::RsaPublicKey;
 
-use crate::{handlers, state::server_state::ServerState};
+use crate::{database::interface, handlers, state::server_state::ServerState};
 
 pub fn ok(){
     
@@ -25,4 +27,34 @@ pub fn post_pub_key(state : Arc<Mutex<ServerState>>, msg : String){
     println!("INSERT key: {}", user);
     let mut network = state.lock().unwrap();
     network.user_keys.insert(user.clone(), key.clone());
+}
+
+pub fn login(state: Arc<Mutex<ServerState>>, stream: &mut TcpStream, msg: String) {
+    let split = shared::split_string(msg);
+    
+    let username = split[1].clone();
+    let password = split[2].clone();
+
+    println!("User: {} is trying to login", username);
+
+    // get the users salt
+
+    // hash the users password 
+    let hash = hash_password(password);
+    // check the database
+    //let valid = executor::block_on(interface::check_user(username, hash));
+
+    // change the state of the server and update the users key name
+
+    // send the user the result
+}
+
+fn hash_password(password : String) -> String{
+    let argon2 = Argon2::default();
+    let salt : SaltString = SaltString::from_b64("cXdlcnR5cXdlcnR5cXdlcnR5cXdlcnR5cXdlcnR5").unwrap();
+    let hash = argon2.hash_password(password.as_bytes(), &salt).unwrap();
+    
+    Argon2::default().verify_password(password.as_bytes(), &hash).expect("invalid password");
+
+    hash.to_string()
 }

@@ -7,3 +7,6 @@ edition = "2021"
 shared = { path = "../shared" }
 rsa = "0.9.6"
 rand = "0.8.5"
+argon2 = "0.5.3"
+dotenv = "0.15"
+diesel = { version = "2.2.0", features = ["postgres"] }

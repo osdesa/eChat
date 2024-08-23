@@ -1,8 +1,7 @@
-use crate::connection::{handlers, socket};
+use crate::connection::socket;
 use crate::state::app_state::AppState;
 use crate::ui::components;
 use crate::ui::login_screen::LoginScreen;
-use crate::connection::socket::NetConnection;
 
 use fltk::app::{self, App, Receiver, Sender};
 use fltk::prelude::*;

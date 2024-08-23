@@ -1,8 +1,5 @@
 use fltk::{app::Sender, button::{self, Button}, enums, frame, input::{self}, prelude::{InputExt, WidgetBase, WidgetExt}};
 use fltk_grid::Grid;
-
-use crate::login;
-
 use super::components;
 
 pub struct LoginScreen{

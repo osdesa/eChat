@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, io::{Read, Write}, str::FromStr, string, thread, time::Duration};
+use std::{io::{Read, Write}, str::FromStr, thread, time::Duration};
 use rsa::{Pkcs1v15Encrypt, RsaPublicKey};
 use shared::{Events, MsgInfo};
 use super::socket::NetConnection;
@@ -57,6 +57,7 @@ pub fn handle_net_message(network : &mut NetConnection){
         Events::OK => {},
         Events::PostPubKey => send_public_key(network),
         Events::GetPubKey => received_public_key(network, msg),
+        Events::Login => {},
     }
 
     send_data(network, "OK".to_string(), "SERVER".to_owned());
@@ -153,7 +154,7 @@ fn login(msg : Vec<String>, network : &mut NetConnection){
 
     // validate username and password
 
-    let data = format!("LOGIN {} {}", username, password);
+    let data = format!("Login {} {}", username, password);
 
     send_data(network, data, "SERVER".to_string());
 }

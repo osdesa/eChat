@@ -1,4 +1,4 @@
-use std::{fs, io::{Read, Write}, net::TcpStream, os::unix::{fs::PermissionsExt, process}, path::Path, str::FromStr};
+use std::{fs, io::{Read, Write}, net::TcpStream, os::unix::fs::PermissionsExt, path::Path, str::FromStr};
 use rsa::{Pkcs1v15Encrypt, RsaPrivateKey, RsaPublicKey};
 
 // CONSTANTS
@@ -21,12 +21,7 @@ pub enum Events {
     OK,
     GetPubKey,
     PostPubKey,
-}
-
-impl Default for Events {
-    fn default() -> Self {
-        Self::OK
-    }
+    Login,
 }
 
 impl FromStr for Events {
@@ -39,6 +34,7 @@ impl FromStr for Events {
             "OK"                => Ok(Events::OK),
             "GETPubKey"         => Ok(Events::GetPubKey),
             "PPK"               => Ok(Events::PostPubKey),
+            "Login"             => Ok(Events::Login),
             _                   => Err(()),
         }
     }
@@ -144,7 +140,7 @@ pub fn write_encrypted(data: String, stream : &mut TcpStream, pub_key : RsaPubli
     let mut rng = rand::thread_rng();
     let enc_data = pub_key.encrypt(&mut rng, Pkcs1v15Encrypt, data.as_bytes()).expect("failed to encrypt");
 
-    let encrpyted: String = String::from_utf8_lossy(&enc_data).to_string();
+    let encrypted: String = String::from_utf8_lossy(&enc_data).to_string();
     
-    write_data(stream, encrpyted);
+    write_data(stream, encrypted);
 }

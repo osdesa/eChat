@@ -8,8 +8,8 @@ use crate::connection::handlers;
 
 pub struct NetConnection {
     pub stream : TcpStream,
-    port : u32,
-    ip_addr : String,
+    _port : u32,
+    _ip_addr : String,
     pub public : RsaPublicKey,
     pub private : RsaPrivateKey,
     pub receiver : Receiver<String>,
@@ -22,8 +22,8 @@ impl NetConnection {
 
         NetConnection{
             stream : s,
-            port : port,
-            ip_addr : ip_addr,       
+            _port : port,
+            _ip_addr : ip_addr,       
             public : keys.public,
             private : keys.private,
             receiver : recv,

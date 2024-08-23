@@ -1,2 +1,3 @@
 app/target/*
 app/secure_keys/*
+.env

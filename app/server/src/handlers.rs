@@ -1,5 +1,4 @@
-use core::time;
-use std::{fmt::format, io::{Read, Write}, net::TcpStream, os::linux::raw::stat, str::FromStr, sync::{Arc, Mutex}, thread, time::Duration};
+use std::{io::{Read, Write}, net::TcpStream, str::FromStr, sync::{Arc, Mutex}};
 use rsa::{Pkcs1v15Encrypt, RsaPublicKey};
 use shared::{Events, MsgInfo};
 
@@ -153,9 +152,10 @@ fn show_user_count(state: &Mutex<ServerState>) {
 }
 
 fn valid_request(msg : String, state : Arc<Mutex<ServerState>>, stream : &mut TcpStream) {
-    match Events::from_str(&msg).unwrap_or_default() {
+    match Events::from_str(&msg).unwrap() {
         Events::OK => requests::ok(),
         Events::GetPubKey => requests::get_pub_key(stream, state),
         Events::PostPubKey => requests::post_pub_key(state, msg),
+        Events::Login => requests::login(state, stream, msg),
     }
 }
