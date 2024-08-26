@@ -57,11 +57,15 @@ pub fn handle_net_message(network : &mut NetConnection){
         Events::OK => {},
         Events::PostPubKey => send_public_key(network),
         Events::GetPubKey => received_public_key(network, msg),
-        Events::Login => {},
+        Events::Login => login_check(msg),
     }
 
     send_data(network, "OK".to_string(), "SERVER".to_owned());
     handle_app_message(network);
+}
+
+fn login_check(msg: String) {
+    println!("LOGIN ATTEMPT: {}", msg);
 }
 
 fn send_public_key(network : &mut NetConnection){

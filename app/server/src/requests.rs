@@ -42,11 +42,15 @@ pub fn login(state: Arc<Mutex<ServerState>>, stream: &mut TcpStream, msg: String
     // hash the users password 
     let hash = hash_password(password);
     // check the database
-    //let valid = executor::block_on(interface::check_user(username, hash));
+    let valid = interface::check_user(username, hash);
 
     // change the state of the server and update the users key name
 
     // send the user the result
+    println!("User is : {}", valid);
+    let data = format!("Login {}", valid);
+
+    handlers::send_data(stream, &state, &"USER".to_string(), data)
 }
 
 fn hash_password(password : String) -> String{
